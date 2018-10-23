@@ -1,7 +1,5 @@
-import requests
 import time
-from threading import Thread, Lock
-import ast
+from threading import Thread
 import socket
 import os 
 import json
@@ -21,10 +19,8 @@ class WTH4:
         self.on = True
         self.map = None
         self.socket_data = None
-        self.mutex = Lock()
 
-    def initiate_map_update(self, path):
-        self.github_file = path
+    def initiate_map_update(self):
         self.thread_map = Thread(target=self.start_map_update)
         self.thread_map.daemon = True
         self.thread_map.start()
@@ -33,7 +29,7 @@ class WTH4:
         while self.on:
             with open('map.json') as f:
                 self.map = json.load(f)
-            time.sleep(5)
+            time.sleep(30)
 
     def initiate_socket(self):
         self.thread_socket = Thread(target=self.start_recvmsg)
@@ -70,21 +66,16 @@ class WTH4:
         if not self.map:
             return result
 
-        print("TEXT")
         for point in self.map.get("features")[0].get("geometry").get("road_coordinates"):
-            # 200 is the number that still need to validate!!!
-            print(self.distance(longitude, latitude, point[0], point[1]))
             if self.distance(longitude, latitude, point[0], point[1]) <= 400:
                 result.append(point)
         for building in self.map.get("features")[0].get("geometry").get("building_coordinates"):
-            # remove it or check
             if self.distance(longitude, latitude, building[0], building[1]) <= 500:
                 buildings.append(building)
 
         return result, buildings
 
     def shutdown(self):
-        print("Shutdown call...")
         self.on = False
         self.sock.close()
         self.thread_map.join()
@@ -93,7 +84,6 @@ class WTH4:
 
 if __name__ == "__main__":
     stuff = WTH4()
-    stuff.initiate_map_update(
-        path="https://raw.githubusercontent.com/nai1gun/robocar-map/master/map/track.geojson")
+    stuff.initiate_map_update()
     stuff.initiate_socket()
     os.system('read x "Press any key to continue..."')
