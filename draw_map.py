@@ -3,6 +3,7 @@
 import numpy as np
 import cv2
 import socket
+from collections import deque
 img = np.zeros((800,800,3), np.uint8)
 
 UDP_IP = "127.0.0.1"
@@ -18,7 +19,8 @@ points = [ [ 590.684948096885478, -513.313846695208326 ], [ 722.371981115476729,
 points = [[scale*x[0], scale*-x[1]] for x in points]
 print(points)
 points = np.array(points)
-
+trail_size = 32
+trail = deque(maxlen=trail_size)
 
 img = np.zeros((800,800,3), np.uint8)
 while True:
@@ -34,6 +36,19 @@ while True:
         print(coords)
         cv2.circle(img, (int(coords[0]), int(coords[1])), int(10),
           (0, 255, 255), 2)
+        trail.appendleft((int(coords[0]), int(coords[1])))
+    
+    # loop over the set of tracked points
+    for i in range(1, len(trail)):
+        # if either of the tracked points are None, ignore
+        # them
+        if trail[i - 1] is None or trail[i] is None:
+            continue
+
+        # otherwise, compute the thickness of the line and
+        # draw the connecting lines
+        thickness = int(np.sqrt(trail_size / float(i + 1)) * 2.5)
+        cv2.line(img, trail[i - 1], trail[i], (0, 0, 255), thickness)
 
 #cv2.imwrite("obrazek.png", img)
 #cv2.waitKey(0)
